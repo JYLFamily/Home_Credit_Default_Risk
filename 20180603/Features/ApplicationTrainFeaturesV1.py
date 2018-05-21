@@ -1,14 +1,18 @@
 # coding:utf-8
 
 import os
+import sys
 import pandas as pd
 import featuretools as ft
 
 
-class ApplicationTrainFeatures(object):
+class ApplicationTrainFeaturesV1(object):
 
-    def __init__(self, *, path):
-        self.__path = path
+    def __init__(self, *, input_path, output_path, output_file_name):
+        self.__input_path = input_path
+        self.__output_path = output_path
+        self.__output_file_name = output_file_name
+
         self.__application_train = None
         self.__bureau = None
         self.__bureau_balance = None
@@ -22,26 +26,26 @@ class ApplicationTrainFeatures(object):
         self.__feature_dataframe = None
 
     def data_prepare(self):
-        self.__application_train = pd.read_csv(os.path.join(self.__path, "application_train.csv"))
-        self.__bureau = pd.read_csv(os.path.join(self.__path, "bureau.csv"))
+        self.__application_train = pd.read_csv(os.path.join(self.__input_path, "application_train.csv"))
+        self.__bureau = pd.read_csv(os.path.join(self.__input_path, "bureau.csv"))
 
-        self.__bureau_balance = pd.read_csv(os.path.join(self.__path, "bureau_balance.csv"))
+        self.__bureau_balance = pd.read_csv(os.path.join(self.__input_path, "bureau_balance.csv"))
         self.__bureau_balance["bureau_balance_id"] = list(range(self.__bureau_balance.shape[0]))  # 缺少 index, 添加
         self.__bureau_balance = self.__bureau_balance.drop(["MONTHS_BALANCE"], axis=1)  # MONTHS_BALANCE 与时间相关, 删掉
 
-        self.__previous_application = pd.read_csv(os.path.join(self.__path, "previous_application.csv"))
+        self.__previous_application = pd.read_csv(os.path.join(self.__input_path, "previous_application.csv"))
 
-        self.__pos_cash_balance = pd.read_csv(os.path.join(self.__path, "POS_CASH_balance.csv"))
+        self.__pos_cash_balance = pd.read_csv(os.path.join(self.__input_path, "POS_CASH_balance.csv"))
         self.__pos_cash_balance["pos_cash_balance_id"] = list(range(self.__pos_cash_balance.shape[0]))  # 缺少 index, 添加
         self.__pos_cash_balance = self.__pos_cash_balance.drop(["MONTHS_BALANCE"], axis=1)  # MONTHS_BALANCE 与时间相关, 删掉
         self.__pos_cash_balance = self.__pos_cash_balance.drop(["SK_ID_CURR"], axis=1)
 
-        self.__credit_card_balance = pd.read_csv(os.path.join(self.__path, "credit_card_balance.csv"))
+        self.__credit_card_balance = pd.read_csv(os.path.join(self.__input_path, "credit_card_balance.csv"))
         self.__credit_card_balance["credit_card_balance_id"] = list(range(self.__credit_card_balance.shape[0]))  # 缺少 index, 添加
         self.__credit_card_balance = self.__credit_card_balance.drop(["MONTHS_BALANCE"], axis=1)  # MONTHS_BALANCE 与时间相关, 删掉
         self.__credit_card_balance = self.__credit_card_balance.drop(["SK_ID_CURR"], axis=1)
 
-        self.__installments_payments = pd.read_csv(os.path.join(self.__path, "installments_payments.csv"))
+        self.__installments_payments = pd.read_csv(os.path.join(self.__input_path, "installments_payments.csv"))
         self.__installments_payments["installments_payments_id"] = list(range(self.__installments_payments.shape[0]))  # 缺少 index, 添加
         self.__installments_payments = self.__installments_payments.drop(["SK_ID_CURR"], axis=1)
 
@@ -162,13 +166,18 @@ class ApplicationTrainFeatures(object):
                             ft.primitives.aggregation_primitives.NUnique,
                             ft.primitives.aggregation_primitives.Mode],
             trans_primitives=[],
-            verbose=True
+            verbose=True,
+            chunk_size=110  # 调大 chunk_size 以时间换空间, 加大内存占用减少运行时间
         )
 
+        self.__feature_dataframe.to_csv(os.path.join(self.__output_path, self.__output_file_name), index=False)
+
 if __name__ == "__main__":
-    atf = ApplicationTrainFeatures(
-        path="D:\\Kaggle\\Home_Credit_Default_Risk\\raw_data\\"
+    atf1 = ApplicationTrainFeaturesV1(
+        input_path=sys.argv[1],
+        output_path=sys.argv[2],
+        output_file_name=sys.argv[3]
     )
-    atf.data_prepare()
-    atf.es_set()
-    atf.dfs_run()
+    atf1.data_prepare()
+    atf1.es_set()
+    atf1.dfs_run()
