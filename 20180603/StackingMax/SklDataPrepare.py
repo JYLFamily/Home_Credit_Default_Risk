@@ -4,7 +4,7 @@ import numpy as np
 import category_encoders as ce
 
 
-class ForestDataPrepare(object):
+class SklDataPrepare(object):
 
     def __init__(self, *, train_feature, train_label, test_feature):
         self.__train_feature = train_feature
