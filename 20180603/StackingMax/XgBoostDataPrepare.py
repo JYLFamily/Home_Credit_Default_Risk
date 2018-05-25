@@ -7,9 +7,9 @@ import category_encoders as ce
 class XgBoostDataPrepare(object):
 
     def __init__(self, *, train_feature, train_label, test_feature):
-        self.__train_feature = train_feature
-        self.__train_label = train_label
-        self.__test_feature = test_feature
+        self.__train_feature = train_feature.copy()
+        self.__train_label = train_label.copy()
+        self.__test_feature = test_feature.copy()
         self.__categorical_index = None
         self.__numeric_index = None
         self.__encoder = None

@@ -6,8 +6,8 @@ import numpy as np
 class CatBoostDataPrepare(object):
 
     def __init__(self, *, train_feature, test_feature):
-        self.__train_feature = train_feature
-        self.__test_feature = test_feature
+        self.__train_feature = train_feature.copy()
+        self.__test_feature = test_feature.copy()
         self.__categorical_index = None
         self.__numeric_index = None
 
@@ -24,15 +24,18 @@ class CatBoostDataPrepare(object):
         self.__test_feature.iloc[:, self.__categorical_index] = (
             self.__test_feature.iloc[:, self.__categorical_index].fillna("missing")
         )
-        self.__train_feature.iloc[:, self.__numeric_index] = (
-            self.__train_feature.iloc[:, self.__numeric_index].apply(
-                lambda x: x.fillna(-999.0) if x.median() > 0 else x.fillna(999.0)
-            )
-        )
-        self.__test_feature.iloc[:, self.__numeric_index] = (
-            self.__test_feature.iloc[:, self.__numeric_index].apply(
-                lambda x: x.fillna(-999.0) if x.median() > 0 else x.fillna(999.0)
-            )
-        )
+
+        # 让 catboost 自行处理缺失值
+
+        # self.__train_feature.iloc[:, self.__numeric_index] = (
+        #     self.__train_feature.iloc[:, self.__numeric_index].apply(
+        #         lambda x: x.fillna(-999.0) if x.median() > 0 else x.fillna(999.0)
+        #     )
+        # )
+        # self.__test_feature.iloc[:, self.__numeric_index] = (
+        #     self.__test_feature.iloc[:, self.__numeric_index].apply(
+        #         lambda x: x.fillna(-999.0) if x.median() > 0 else x.fillna(999.0)
+        #     )
+        # )
 
         return self.__train_feature, self.__test_feature
