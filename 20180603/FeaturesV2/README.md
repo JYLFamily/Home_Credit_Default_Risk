@@ -1,6 +1,8 @@
 - XNA 代表缺失
 - XAP 代表缺失
 - Days_ 开头字段 365243 代表缺失
+- 添加 Skew
+- 添加 Median 删除 Mean
 - 自动化标注 categorical feature
 - to_csv(, index=True)
 - And So On
