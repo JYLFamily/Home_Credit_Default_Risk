@@ -1,7 +1,7 @@
 # coding:utf-8
 
 
-class LgBoostWrapper(object):
+class LgbWrapper(object):
 
     def __init__(self, *, clf, dataset_params, train_params, seed=7):
         self.__dataset_params = dataset_params
@@ -14,18 +14,18 @@ class LgBoostWrapper(object):
         self.__clf = None
 
     def train(self, train_feature, train_label):
-        train = self.__lgb.DataSet(
+        train = self.__lgb.Dataset(
             data=train_feature,
             label=train_label,
-            feature_name=train_feature.columns,
-            categorical_feature=self.__categorical_feature
+            feature_name=train_feature.columns.tolist(),
+            categorical_feature=self.__categorical_feature.tolist()
         )
-        self.__clf.fit(self.__train_params, train, num_boost_round=self.__num_boost_round)
+        self.__clf = self.__lgb.train(
+            self.__train_params,
+            train,
+            num_boost_round=self.__num_boost_round,
+            categorical_feature=self.__categorical_feature.tolist()
+        )
 
     def predict(self, test_feature):
-        test = self.__lgb.DataSet(
-            data=test_feature,
-            feature_names=test_feature.columns,
-            categorical_feature=self.__categorical_feature
-        )
-        return self.__clf.predict_proba(test)[:, 1]
+        return self.__clf.predict(test_feature.values)

@@ -41,12 +41,12 @@ class SklDataPrepare(object):
 
         self.__train_feature.iloc[:, self.__numeric_index] = (
             self.__train_feature.iloc[:, self.__numeric_index].apply(
-                lambda x: x.fillna(-999.0) if x.median() > 0 else x.fillna(999.0)
+                lambda x: x.fillna(-9999.0) if x.median() > 0 else x.fillna(9999.0)
             )
         )
         self.__test_feature.iloc[:, self.__numeric_index] = (
             self.__test_feature.iloc[:, self.__numeric_index].apply(
-                lambda x: x.fillna(-999.0) if x.median() > 0 else x.fillna(999.0)
+                lambda x: x.fillna(-9999.0) if x.median() > 0 else x.fillna(9999.0)
             )
         )
 

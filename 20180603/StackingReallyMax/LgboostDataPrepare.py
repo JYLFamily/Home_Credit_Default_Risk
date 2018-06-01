@@ -1,18 +1,20 @@
 # coding:utf-8
 
 import numpy as np
+from sklearn.preprocessing import LabelEncoder
 
 
-class CatBoostDataPrepare(object):
+class LgboostDataPrepare(object):
 
     def __init__(self, *, train_feature, test_feature):
         self.__train_feature = train_feature.copy()
         self.__test_feature = test_feature.copy()
         self.__categorical_index = None
         self.__numeric_index = None
+        self.__encoder = None
 
     def data_prepare(self):
-        """ 离散变量 缺失值填充 missing 连续变量 缺失值填充 +999/-999
+        """ 离散变量 缺失值填充 missing
         :return: 训练集特征 测试集特征
         """
         self.__categorical_index = np.where(self.__train_feature.dtypes == "object")[0]
@@ -24,18 +26,13 @@ class CatBoostDataPrepare(object):
         self.__test_feature.iloc[:, self.__categorical_index] = (
             self.__test_feature.iloc[:, self.__categorical_index].fillna("missing")
         )
-
-        # 让 catboost 自行处理缺失值
-
-        # self.__train_feature.iloc[:, self.__numeric_index] = (
-        #     self.__train_feature.iloc[:, self.__numeric_index].apply(
-        #         lambda x: x.fillna(-999.0) if x.median() > 0 else x.fillna(999.0)
-        #     )
-        # )
-        # self.__test_feature.iloc[:, self.__numeric_index] = (
-        #     self.__test_feature.iloc[:, self.__numeric_index].apply(
-        #         lambda x: x.fillna(-999.0) if x.median() > 0 else x.fillna(999.0)
-        #     )
-        # )
+        for i in self.__categorical_index:
+            self.__encoder = LabelEncoder()
+            self.__encoder.fit(self.__train_feature.iloc[:, i])
+            self.__train_feature.iloc[:, i] = self.__encoder.transform(self.__train_feature.iloc[:, i])
+            self.__test_feature.iloc[:, i] = (  # test 中存在 train 中没有的 categories
+                ["missing" if i not in self.__encoder.classes_ else i for i in self.__test_feature.iloc[:, i]]
+            )
+            self.__test_feature.iloc[:, i] = self.__encoder.transform(self.__test_feature.iloc[:, i])
 
         return self.__train_feature, self.__test_feature
