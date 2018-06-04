@@ -11,6 +11,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import RandomForestClassifier
 from catboost import CatBoostClassifier
+from sklearn.utils import shuffle
 np.random.seed(7)
 
 
@@ -58,6 +59,10 @@ class StackingMax(object):
         self.__train_feature = self.__train.drop(["TARGET", "SK_ID_CURR"], axis=1)
         self.__test = self.__test.drop("SK_ID_CURR", axis=1)
         self.__test_feature = self.__test[self.__train_feature.columns]
+
+        # 使用 stacking 前要 shuffle 防止 KFold 的时候使用到未来的信息
+        # shuffle 函数 Pandas in Pandas Out, 所以不用担心
+        self.__train_feature, self.__train_label = shuffle(self.__train_feature, self.__train_label)
 
         self.__ext_source_train = self.__train_feature[["EXT_SOURCE_1", "EXT_SOURCE_2", "EXT_SOURCE_3"]]
         self.__ext_source_test = self.__test_feature[["EXT_SOURCE_1", "EXT_SOURCE_2", "EXT_SOURCE_3"]]
