@@ -1,0 +1,4 @@
+- 使用 stacking really max 生成的 first_layer_train.csv 与 first_layer_test.csv 作为数据集
+- StackingSecondLayer.py 使用 xgboost 作为 meta classifier, 相当于只做一层 stacking
+- 效果很差, 具体原因感觉出现在生成 stacking first layer 的时候没有调整参数
+- And So On
