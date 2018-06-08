@@ -1,0 +1,7 @@
+- 目前基于 stacking first layer 再计算得到的结果效果并不好
+- 希望基于 stacking first layer 计算出一批特征, 例如 LR、KNN、MLP 等等, 这些与 20180603 FeatureV2 生成的特征 stacking first layer 生成的特征结合使用
+- sample submission
+    - sample_submission_one.csv  CatBoostKfold.py iterations=6000
+    - sample_submission_two.csv  CatBoostKfold.py iterations=200 l2_leaf_reg=6 od_wait=20
+- 一直无法解决 Train Kfold Validation AUC >> LB Test AUC 的问题, 可能是通过 featuretools 生成了过多的特征, 导致了噪音的产生
+- And So On
