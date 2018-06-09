@@ -26,8 +26,8 @@ class TrainTestFeatureDistribution(object):
         self.__categorical_entropy_df = None
 
     def data_prepare(self):
-        self.__train = pd.read_csv(os.path.join(self.__input_path, "train_feature_df.csv"))
-        self.__test = pd.read_csv(os.path.join(self.__input_path, "test_feature_df.csv"))
+        self.__train = pd.read_csv(os.path.join(self.__input_path, "application_train.csv"))
+        self.__test = pd.read_csv(os.path.join(self.__input_path, "application_test.csv"))
 
         self.__train_feature = self.__train.drop(["SK_ID_CURR", "TARGET"], axis=1)
         self.__test_feature = self.__test
@@ -41,8 +41,20 @@ class TrainTestFeatureDistribution(object):
         self.__numeric_entropy_df = pd.DataFrame(columns=["feature", "non_entropy", "nan_entropy"])
         for col in self.__numeric_columns:
             # 非缺失分位数
-            p_non = np.nanpercentile(a=self.__train_feature[col], q=list(range(1, 101, 1)))
-            q_non = np.nanpercentile(a=self.__test_feature[col], q=list(range(1, 101, 1)))
+            q = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+            p_percentile = np.nanpercentile(a=self.__train_feature[col], q=q)
+            p_percentile = sorted(list(set(list(p_percentile))))
+            p_non = (list(
+                pd.cut(self.__train_feature[col], bins=p_percentile)
+                .to_frame(col)
+                .groupby(col)[col].count() / np.sum(np.logical_not(self.__train_feature[col].isnull()))
+            ))
+            q_non = (list(
+                pd.cut(self.__test_feature[col], bins=p_percentile)
+                .to_frame(col)
+                .groupby(col)[col].count() / np.sum(np.logical_not(self.__test_feature[col].isnull()))
+            ))
+
             # 缺失比例, 非缺失比例
             p_nan = [
                 np.sum(self.__train_feature[col].isna()) / len(self.__train_feature[col]),
@@ -52,6 +64,7 @@ class TrainTestFeatureDistribution(object):
                 np.sum(self.__test_feature[col].isna()) / len(self.__test_feature[col]),
                 1 - np.sum(self.__test_feature[col].isna()) / len(self.__test_feature[col])
             ]
+
             # 拼接行
             row = pd.DataFrame(
                 [[col, entropy(p_non, q_non), entropy(p_nan, q_nan)]],
@@ -61,13 +74,13 @@ class TrainTestFeatureDistribution(object):
 
     def show_entropy(self):
         self.__numeric_entropy_df = self.__numeric_entropy_df.sort_values(by="non_entropy", ascending=False)
-        print(self.__numeric_entropy_df.tail(10))
+        self.__numeric_entropy_df.to_csv(os.path.join(self.__output_path, "numeric_entropy_df_2.csv"), index=False)
 
 
 if __name__ == "__main__":
     ttfd = TrainTestFeatureDistribution(
-        input_path="D:\\Kaggle\\Home_Credit_Default_Risk\\feature_data_V2",
-        output_path=None
+        input_path="C:\\Users\\puhui\\Desktop\\",
+        output_path="C:\\Users\\puhui\\Desktop\\"
     )
     ttfd.data_prepare()
     ttfd.calc_entropy()
