@@ -62,7 +62,7 @@ class StackingSecondLayer(object):
     def data_prepare(self):
         self.__train = pd.read_csv(os.path.join(self.__input_path, "first_layer_train.csv"))
         self.__test = pd.read_csv(os.path.join(self.__input_path, "first_layer_test.csv"))
-        self.__sample_submission = pd.read_csv(os.path.join(self.__input_path, "sample_submission.csv"))
+        self.__sample_submission = pd.read_csv(os.path.join(self.__input_path, "sample_submission_one.csv"))
 
         self.__train_feature = self.__train.loc[:, [i for i in self.__train.columns if i != "TARGET"]]
         self.__train_label = self.__train.loc[:, ["TARGET"]].squeeze()
@@ -151,8 +151,8 @@ class StackingSecondLayer(object):
         self.__oof_train = self.__clf.train_meta_features_
         self.__oof_test = self.__clf.predict_meta_features(self.__test_feature.values)
 
-        self.__oof_train = self.__oof_train[:, [i for i in range(len(self.__clf.classifiers)) if i % 2 == 0]]
-        self.__oof_test = self.__oof_test[:, [i for i in range(len(self.__clf.classifiers)) if i % 2 == 0]]
+        # self.__oof_train = self.__oof_train[:, [i for i in range(len(self.__clf.classifiers)) if i % 2 != 0]]
+        # self.__oof_test = self.__oof_test[:, [i for i in range(len(self.__clf.classifiers)) if i % 2 != 0]]
 
     def model_predict(self):
         print("------------------------------------")
@@ -179,10 +179,10 @@ if __name__ == "__main__":
     ssl = StackingSecondLayer(
         input_path="D:\\Kaggle\\Home_Credit_Default_Risk\\feature_data_V3",
         output_path="D:\\Code\\Python\\Home_Credit_Default_Risk\\20180603\\StackingReallyMax",
-        output_file_name="sample_submission.csv"
+        output_file_name="sample_submission_one.csv"
         # input_path=sys.argv[1],
         # output_path=sys.argv[2],
-        # output_file_name="sample_submission.csv"
+        # output_file_name="sample_submission_one.csv"
     )
     ssl.data_prepare()
     ssl.model_fit()

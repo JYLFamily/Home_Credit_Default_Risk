@@ -25,7 +25,7 @@ class CatBoostBaseline(object):
     def data_prepare(self):
         self.__train = pd.read_csv(os.path.join(self.__input_path, "train_feature_df.csv"))
         self.__test = pd.read_csv(os.path.join(self.__input_path, "test_feature_df.csv"))
-        self.__sample_submission = pd.read_csv(os.path.join(self.__input_path, "sample_submission.csv"))
+        self.__sample_submission = pd.read_csv(os.path.join(self.__input_path, "sample_submission_one.csv"))
 
         # self.__train = self.__train.drop("SK_ID_CURR", axis=1)
         # self.__test = self.__test.drop("SK_ID_CURR", axis=1)

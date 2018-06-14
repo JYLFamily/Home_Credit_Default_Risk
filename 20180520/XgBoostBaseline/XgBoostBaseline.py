@@ -67,7 +67,7 @@ class XgBoostBaseline(object):
         # proba 出现负数
         self.__sample_submission["TARGET"] = np.clip(self.__clf.predict(self.__application_test_dmatrix), 0, 1)
         self.__sample_submission.to_csv(
-            "C:\\Users\\puhui\\PycharmProjects\\Home_Credit_Default_Risk\\20180520\XgBoostBaseline\\sample_submission.csv",
+            "C:\\Users\\puhui\\PycharmProjects\\Home_Credit_Default_Risk\\20180520\XgBoostBaseline\\sample_submission_one.csv",
             index=False
         )
 

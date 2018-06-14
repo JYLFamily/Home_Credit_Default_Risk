@@ -31,7 +31,7 @@ class TpotBaseline(object):
     def data_prepare(self):
         self.__train = pd.read_csv(os.path.join(self.__input_path, "train_feature_df.csv"))
         self.__test = pd.read_csv(os.path.join(self.__input_path, "test_feature_df.csv"))
-        self.__sample_submission = pd.read_csv(os.path.join(self.__input_path, "sample_submission.csv"))
+        self.__sample_submission = pd.read_csv(os.path.join(self.__input_path, "sample_submission_one.csv"))
 
         self.__train_label = self.__train["TARGET"]
         self.__train_feature = self.__train.drop("TARGET", axis=1)
