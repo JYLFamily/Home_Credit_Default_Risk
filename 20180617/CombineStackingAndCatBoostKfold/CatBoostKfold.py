@@ -7,6 +7,8 @@ import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 from catboost import CatBoostClassifier
 from sklearn.utils import shuffle
+from category_encoders import TargetEncoder
+from sklearn.metrics import roc_auc_score
 np.random.seed(7)
 
 
@@ -24,6 +26,7 @@ class CatBoostKfold(object):
         self.__train_feature, self.__train_label = [None for _ in range(2)]
         self.__test_feature = None
         self.__categorical_index = None
+        self.__encoder = None
         self.__numeric_index = None
 
         self.__folds = None
@@ -32,7 +35,7 @@ class CatBoostKfold(object):
         self.__cat = None
 
     def data_prepare(self):
-        self.__sample_submission = pd.read_csv(os.path.join(self.__input_path_1, "sample_submission_one.csv"))
+        self.__sample_submission = pd.read_csv(os.path.join(self.__input_path_1, "sample_submission.csv"))
         self.__train = pd.read_csv(os.path.join(self.__input_path_1, "train_feature_df.csv"))
         self.__test = pd.read_csv(os.path.join(self.__input_path_1, "test_feature_df.csv"))
         self.__train_res = pd.read_csv(os.path.join(self.__input_path_2, "feature_train_res.csv"))
@@ -56,6 +59,15 @@ class CatBoostKfold(object):
             self.__test_feature.iloc[:, self.__categorical_index].fillna("missing")
         )
 
+        self.__encoder = TargetEncoder()
+        self.__encoder.fit(self.__train_feature.iloc[:, self.__categorical_index], self.__train_label)
+        self.__train_feature.iloc[:, self.__categorical_index] = (
+            self.__encoder.transform(self.__train_feature.iloc[:, self.__categorical_index])
+        )
+        self.__test_feature.iloc[:, self.__categorical_index] = (
+            self.__encoder.transform(self.__test_feature.iloc[:, self.__categorical_index])
+        )
+
         # There are NaNs in test dataset (feature number 77) but there were no NaNs in learn dataset"
         self.__numeric_index = np.where(self.__train_feature.dtypes != "object")[0]
         self.__train_feature.iloc[:, self.__numeric_index] = (
@@ -69,7 +81,7 @@ class CatBoostKfold(object):
             )
         )
 
-        # blending 之前需要 shuffle
+        # blending 之前需要 shuffle, 这里其实并不需要, 因为后面 StratifiedKFold shuffle
         self.__train_feature, self.__train_label = shuffle(self.__train_feature, self.__train_label)
 
     def model_fit(self):
@@ -83,13 +95,13 @@ class CatBoostKfold(object):
 
             self.__cat = CatBoostClassifier(
                 iterations=6000,
+                od_wait=200,
                 od_type="Iter",
                 eval_metric="AUC"
             )
             self.__cat.fit(
                 trn_x,
                 trn_y,
-                cat_features=self.__categorical_index,
                 eval_set=[(val_x, val_y)],
                 use_best_model=True
             )
@@ -98,12 +110,12 @@ class CatBoostKfold(object):
 
             self.__oof_preds[val_idx] = pred_val
             self.__sub_preds += pred_test / self.__folds.n_splits
-
-            print(self.__cat.feature_importances_)
+            print("Fold %2d AUC : %.6f" % (n_fold + 1, roc_auc_score(val_y, self.__oof_preds[val_idx])))
+        print("Full AUC score %.6f" % roc_auc_score(self.__train_label, self.__oof_preds))
 
     def model_predict(self):
         self.__sample_submission["TARGET"] = self.__sub_preds
-        self.__sample_submission.to_csv(os.path.join(self.__output_path, "sample_submission_one.csv"), index=False)
+        self.__sample_submission.to_csv(os.path.join(self.__output_path, "sample_submission.csv"), index=False)
 
 
 if __name__ == "__main__":
