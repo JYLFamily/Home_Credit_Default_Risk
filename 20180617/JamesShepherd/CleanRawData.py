@@ -153,7 +153,7 @@ class CleanRawData(object):
         self.__credit_card_balance.to_csv(os.path.join(self.__output_path, "credit_card_balance.csv"), index=False)
         self.__installments_payments.to_csv(os.path.join(self.__output_path, "installments_payments.csv"), index=False)
         self.__previous_application.to_csv(os.path.join(self.__output_path, "previous_application.csv"), index=False)
-
+        self.__pos_cash_balance.to_csv(os.path.join(self.__output_path, "pos_cash_balance.csv"), index=False)
 
 if __name__ == "__main__":
     crd = CleanRawData(
