@@ -1,5 +1,6 @@
 # coding:utf-8
 
+import re
 import os
 import sys
 import numpy as np
@@ -35,7 +36,8 @@ class LightGbmKfold(object):
         self.__test = pd.read_csv(os.path.join(self.__input_path, "test_feature_df.csv"))
 
         self.__train_label = self.__train["TARGET"]
-        self.__train_feature = self.__train.drop(["SK_ID_CURR", "TARGET"], axis=1)
+        self.__train_feature = self.__train.drop(
+            ["TARGET"] + [col for col in self.__train.columns.tolist() if re.search(r"SK_ID", col)], axis=1)
         self.__test_feature = self.__test[self.__train_feature.columns.tolist()]
 
         self.__categorical_columns = self.__train_feature.select_dtypes("object").columns.tolist()
