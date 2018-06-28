@@ -27,7 +27,7 @@ class BayesianOptimizationGoss(object):
         # parameter tuning
         self.__gbm_bo = None
         self.__gbm_params = None
-        self.__gp_params = {"alpha": 1e-5}
+        self.__gp_params = {"alpha": 1e-3}
 
     def data_prepare(self):
         self.__train = pd.read_csv(os.path.join(self.__input_path, "train_select_feature_df.csv"))
@@ -54,13 +54,15 @@ class BayesianOptimizationGoss(object):
                     n_estimators=max(int(n_estimators), 1),
                     learning_rate=max(min(learning_rate, 1.0), 0),
                     max_depth=max(int(max_depth), 1),
-                    num_leaves=max(int(num_leaves), 1),
+                    # 如果 num_leaves > 2 ^ int(max_depth) 时 leaf-wise 的树就会太深导致 overfitting
+                    num_leaves=max(int(2 ^ int(max_depth) if num_leaves > 2 ^ int(max_depth) else int(num_leaves)), 1),
                     min_split_gain=max(min_split_gain, 0),
                     min_child_weight=max(min_child_weight, 0),
                     colsample_bytree=max(min(colsample_bytree, 1.0), 0),
                     subsample=max(min(subsample, 1.0), 0),
                     reg_alpha=max(reg_alpha, 0),
                     reg_lambda=max(reg_lambda, 0),
+                    n_jobs=4,
                     verbose=-1
                 ),
                 self.__train_feature,
@@ -73,7 +75,7 @@ class BayesianOptimizationGoss(object):
 
         self.__gbm_params = {
             # Gradient boosting parameter
-            "n_estimators": (500, 10000),
+            "n_estimators": (1000, 4000),
             "learning_rate": (0.001, 0.1),
             # tree parameter
             "max_depth": (4, 10),
@@ -81,14 +83,14 @@ class BayesianOptimizationGoss(object):
             "min_split_gain": (0.00001, 0.1),
             "min_child_weight": (1, 100),
             # bagging parameter
-            "colsample_bytree": (0, 0.999),
-            "subsample": (0, 0.999),
+            "colsample_bytree": (0, 1.0),
+            "subsample": (0, 1.0),
             # reg parameter
             "reg_alpha": (0, 10),
             "reg_lambda": (0, 10)
         }
         self.__gbm_bo = BayesianOptimization(__cv, self.__gbm_params)
-        self.__gbm_bo.maximize(init_points=10,  n_iter=50, ** self.__gp_params)
+        self.__gbm_bo.maximize(init_points=10,  n_iter=50, kappa=2.576*2, ** self.__gp_params)
 
         print(self.__gbm_bo.res["max"]["max_val"])
         print(self.__gbm_bo.res["max"]["max_params"]["n_estimators"])

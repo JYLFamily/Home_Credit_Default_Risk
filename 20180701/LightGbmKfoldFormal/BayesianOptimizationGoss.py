@@ -27,7 +27,7 @@ class BayesianOptimizationGoss(object):
         # parameter tuning
         self.__gbm_bo = None
         self.__gbm_params = None
-        self.__gp_params = {"alpha": 1e-5}
+        self.__gp_params = {"alpha": 1e-3}
 
     def data_prepare(self):
         self.__train = pd.read_csv(os.path.join(self.__input_path, "train_select_feature_df.csv"))
@@ -65,12 +65,13 @@ class BayesianOptimizationGoss(object):
                     # subsample=max(min(subsample, 1.0), 0),
                     reg_alpha=max(reg_alpha, 0),
                     reg_lambda=max(reg_lambda, 0),
+                    n_jobs=4,
                     verbose=-1
                 ),
                 self.__train_feature,
                 self.__train_label,
                 scoring="roc_auc",
-                cv=5
+                cv=3
             ).mean()
 
             return val
@@ -80,7 +81,7 @@ class BayesianOptimizationGoss(object):
             "top_rate": (0.01, 1),
             "other_rate": (0.01, 1),
             # Gradient boosting parameter
-            "n_estimators": (500, 10000),
+            "n_estimators": (1000, 4000),
             "learning_rate": (0.001, 0.1),
             # tree parameter
             "max_depth": (4, 10),
@@ -95,7 +96,7 @@ class BayesianOptimizationGoss(object):
             "reg_lambda": (0, 10)
         }
         self.__gbm_bo = BayesianOptimization(__cv, self.__gbm_params)
-        self.__gbm_bo.maximize(init_points=10,  n_iter=50, ** self.__gp_params)
+        self.__gbm_bo.maximize(init_points=10,  n_iter=50, kappa=2.576*2, ** self.__gp_params)
 
         print(self.__gbm_bo.res["max"]["max_val"])
         print(self.__gbm_bo.res["max"]["max_params"]["top_rate"])

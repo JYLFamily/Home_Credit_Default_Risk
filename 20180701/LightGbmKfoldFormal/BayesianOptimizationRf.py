@@ -74,7 +74,7 @@ class BayesianOptimizationGoss(object):
 
         self.__gbm_params = {
             # Gradient boosting parameter
-            "n_estimators": (500, 10000),
+            "n_estimators": (500, 3000),
             "learning_rate": (0.001, 0.1),
             # tree parameter
             "max_depth": (4, 10),
