@@ -1,0 +1,10 @@
+- https://www.kaggle.com/gpreda/home-credit-default-risk-extensive-eda
+- EDA pipeline
+  - Load Data
+  - Glimpse
+    - 行数、列数
+    - columns.tolist()、head 一下, 目的是理解每个特征的含义, 从而就知道是分类变量还是连续变量等等
+  - TARGET 分布
+  - Feature Missing 比例
+  - 看 Feature
+- And So On
