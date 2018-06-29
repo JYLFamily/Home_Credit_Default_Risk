@@ -8,6 +8,7 @@ import pandas as pd
 from category_encoders import TargetEncoder
 from sklearn.utils import shuffle
 from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import StratifiedKFold
 from bayes_opt import BayesianOptimization
 from lightgbm import LGBMClassifier
 np.random.seed(7)
@@ -57,7 +58,7 @@ class BayesianOptimizationGoss(object):
                     other_rate=max(min(1.0-top_rate, 1.0), 0),
                     n_estimators=max(int(n_estimators), 1),
                     learning_rate=max(min(learning_rate, 1.0), 0),
-                    max_depth=max(int(max_depth), 1),
+                    max_depth=max(int(2 ^ int(max_depth) if num_leaves > 2 ^ int(max_depth) else int(num_leaves)), 1),
                     num_leaves=max(int(num_leaves), 1),
                     min_split_gain=max(min_split_gain, 0),
                     min_child_weight=max(min_child_weight, 0),
@@ -71,7 +72,7 @@ class BayesianOptimizationGoss(object):
                 self.__train_feature,
                 self.__train_label,
                 scoring="roc_auc",
-                cv=3
+                cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=7)
             ).mean()
 
             return val
