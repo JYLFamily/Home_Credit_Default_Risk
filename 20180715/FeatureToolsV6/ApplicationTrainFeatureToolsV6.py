@@ -11,9 +11,10 @@ from featuretools.primitives.aggregation_primitives import Min
 from featuretools.primitives.aggregation_primitives import Max
 from featuretools.primitives.aggregation_primitives import Median
 from featuretools.primitives.aggregation_primitives import Count
+from featuretools.primitives.aggregation_primitives import Skew
 
 
-class ApplicationTrainFeatureToolsV3(object):
+class ApplicationTrainFeatureToolsV6(object):
     def __init__(self, *, input_path, output_path, output_file_name):
         self.__ManualFeatureApplicationPy = importlib.import_module("ManualFeatureApplication")
         self.__ManualFeatureBureauPy = importlib.import_module("ManualFeatureBureau")
@@ -190,14 +191,17 @@ class ApplicationTrainFeatureToolsV3(object):
             )
         )
         self.__es["previous_application"]["NAME_CONTRACT_STATUS_Refused"].interesting_values = [1]
+        self.__es["previous_application"]["NAME_CONTRACT_STATUS_Approved"].interesting_values = [1]
         self.__es["previous_application"]["NAME_PRODUCT_TYPE_walk-in"].interesting_values = [1]
         self.__es["previous_application"]["CODE_REJECT_REASON_HC"].interesting_values = [1]
+        self.__es["bureau"]["CREDIT_ACTIVE_Active"].interesting_values = [1]
+        self.__es["bureau"]["CREDIT_ACTIVE_Closed"].interesting_values = [1]
 
     def dfs_run(self):
         self.__feature, _ = ft.dfs(
             entityset=self.__es,
             target_entity="application_train",
-            agg_primitives=[Sum, Std, Max, Min, Median, Count],
+            agg_primitives=[Sum, Std, Max, Min, Median, Count, Skew],
             trans_primitives=[],
             verbose=True,
             chunk_size=110  # 调大 chunk_size 以时间换空间, 加大内存占用减少运行时间
@@ -207,7 +211,7 @@ class ApplicationTrainFeatureToolsV3(object):
 
 
 if __name__ == "__main__":
-    atftv3 = ApplicationTrainFeatureToolsV3(
+    atftv3 = ApplicationTrainFeatureToolsV6(
         input_path=sys.argv[1],
         output_path=sys.argv[2],
         output_file_name="train_feature_df.csv"

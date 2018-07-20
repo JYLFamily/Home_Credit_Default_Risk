@@ -11,9 +11,10 @@ from featuretools.primitives.aggregation_primitives import Min
 from featuretools.primitives.aggregation_primitives import Max
 from featuretools.primitives.aggregation_primitives import Median
 from featuretools.primitives.aggregation_primitives import Count
+from featuretools.primitives.aggregation_primitives import Skew
 
 
-class ApplicationTrainFeatureToolsV3(object):
+class ApplicationTestFeatureToolsV6(object):
     def __init__(self, *, input_path, output_path, output_file_name):
         self.__ManualFeatureApplicationPy = importlib.import_module("ManualFeatureApplication")
         self.__ManualFeatureBureauPy = importlib.import_module("ManualFeatureBureau")
@@ -32,7 +33,7 @@ class ApplicationTrainFeatureToolsV3(object):
         self.__credit_card_balance = None
         self.__installments_payments = None
 
-        self.__application_train_categorical = None
+        self.__application_test_categorical = None
         self.__bureau_categorical = None
         self.__bureau_balance_categorical = None
         self.__previous_application_categorical = None
@@ -54,7 +55,7 @@ class ApplicationTrainFeatureToolsV3(object):
         self.__pos_cash_balance = pd.read_csv(os.path.join(self.__input_path, "POS_CASH_balance.csv"))
         self.__previous_application = pd.read_csv(os.path.join(self.__input_path, "previous_application.csv"))
 
-        self.__application_train, _ = (
+        _, self.__application_test = (
             self.__ManualFeatureApplicationPy.ManualFeatureApplication(
                 application_train=self.__application_train,
                 application_test=self.__application_test
@@ -75,9 +76,9 @@ class ApplicationTrainFeatureToolsV3(object):
             ).add_manual_feature()
         )
 
-        self.__application_train_categorical = dict(zip(
-            self.__application_train.select_dtypes("object").columns.tolist(),
-            [ft.variable_types.Categorical for _ in range(len(self.__application_train.select_dtypes("object").columns.tolist()))]
+        self.__application_test_categorical = dict(zip(
+            self.__application_test.select_dtypes("object").columns.tolist(),
+            [ft.variable_types.Categorical for _ in range(len(self.__application_test.select_dtypes("object").columns.tolist()))]
         ))
         self.__bureau_categorical = dict(zip(
             self.__bureau.select_dtypes("object").columns.tolist(),
@@ -105,12 +106,12 @@ class ApplicationTrainFeatureToolsV3(object):
         ))
 
     def es_set(self):
-        self.__es = ft.EntitySet(id="application_train")
+        self.__es = ft.EntitySet(id="application_test")
         self.__es = self.__es.entity_from_dataframe(
-            entity_id="application_train",
-            dataframe=self.__application_train,
+            entity_id="application_test",
+            dataframe=self.__application_test,
             index="SK_ID_CURR",
-            variable_types=None if len(self.__application_train_categorical) == 0 else self.__application_train_categorical
+            variable_types=None if len(self.__application_test_categorical) == 0 else self.__application_test_categorical
         )
         self.__es = self.__es.entity_from_dataframe(
             entity_id="bureau",
@@ -155,7 +156,7 @@ class ApplicationTrainFeatureToolsV3(object):
 
         self.__es = self.__es.add_relationship(
             ft.Relationship(
-                self.__es["application_train"]["SK_ID_CURR"],
+                self.__es["application_test"]["SK_ID_CURR"],
                 self.__es["bureau"]["SK_ID_CURR"]
             )
         )
@@ -167,7 +168,7 @@ class ApplicationTrainFeatureToolsV3(object):
         )
         self.__es = self.__es.add_relationship(
             ft.Relationship(
-                self.__es["application_train"]["SK_ID_CURR"],
+                self.__es["application_test"]["SK_ID_CURR"],
                 self.__es["previous_application"]["SK_ID_CURR"]
             )
         )
@@ -190,14 +191,17 @@ class ApplicationTrainFeatureToolsV3(object):
             )
         )
         self.__es["previous_application"]["NAME_CONTRACT_STATUS_Refused"].interesting_values = [1]
+        self.__es["previous_application"]["NAME_CONTRACT_STATUS_Approved"].interesting_values = [1]
         self.__es["previous_application"]["NAME_PRODUCT_TYPE_walk-in"].interesting_values = [1]
         self.__es["previous_application"]["CODE_REJECT_REASON_HC"].interesting_values = [1]
+        self.__es["bureau"]["CREDIT_ACTIVE_Active"].interesting_values = [1]
+        self.__es["bureau"]["CREDIT_ACTIVE_Closed"].interesting_values = [1]
 
     def dfs_run(self):
         self.__feature, _ = ft.dfs(
             entityset=self.__es,
-            target_entity="application_train",
-            agg_primitives=[Sum, Std, Max, Min, Median, Count],
+            target_entity="application_test",
+            agg_primitives=[Sum, Std, Max, Min, Median, Count, Skew],
             trans_primitives=[],
             verbose=True,
             chunk_size=110  # 调大 chunk_size 以时间换空间, 加大内存占用减少运行时间
@@ -207,11 +211,11 @@ class ApplicationTrainFeatureToolsV3(object):
 
 
 if __name__ == "__main__":
-    atftv3 = ApplicationTrainFeatureToolsV3(
+    atftv4 = ApplicationTestFeatureToolsV6(
         input_path=sys.argv[1],
         output_path=sys.argv[2],
-        output_file_name="train_feature_df.csv"
+        output_file_name="test_feature_df.csv"
     )
-    atftv3.data_prepare()
-    atftv3.es_set()
-    atftv3.dfs_run()
+    atftv4.data_prepare()
+    atftv4.es_set()
+    atftv4.dfs_run()

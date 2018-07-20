@@ -6,12 +6,11 @@ import sys
 import numpy as np
 import pandas as pd
 from category_encoders import TargetEncoder
-from sklearn.utils import shuffle
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import StratifiedKFold
 from bayes_opt import BayesianOptimization
 from lightgbm import LGBMClassifier
-np.random.seed(7)
+np.random.seed(8)
 
 
 class BayesianOptimizationGoss(object):
@@ -22,6 +21,10 @@ class BayesianOptimizationGoss(object):
         self.__train = None
         self.__train_label = None
         self.__train_feature = None
+        self.__train_feature_stacking_tree = None
+        self.__train_feature_stacking_linear = None
+        self.__train_feature_stacking_network = None
+        self.__train_feature_gp = None
         self.__encoder = None
         self.__categorical_columns = None
 
@@ -32,6 +35,10 @@ class BayesianOptimizationGoss(object):
 
     def data_prepare(self):
         self.__train = pd.read_csv(os.path.join(self.__input_path, "train_select_feature_df.csv"))
+        self.__train_feature_stacking_tree = pd.read_csv(os.path.join(self.__input_path, "first_layer_tree_train.csv"))
+        self.__train_feature_stacking_linear = pd.read_csv(os.path.join(self.__input_path, "first_layer_linear_train.csv"))
+        self.__train_feature_stacking_network = pd.read_csv(os.path.join(self.__input_path, "first_layer_network_train.csv"))
+        self.__train_feature_gp = pd.read_csv(os.path.join(self.__input_path, "genetic_train_feature.csv"))
         self.__train_label = self.__train["TARGET"]
         self.__train_feature = self.__train.drop(
             ["TARGET"] + [col for col in self.__train.columns.tolist() if re.search(r"SK_ID", col)], axis=1)
@@ -43,7 +50,13 @@ class BayesianOptimizationGoss(object):
             self.__encoder.transform(self.__train_feature[self.__categorical_columns])
         )
 
-        self.__train_feature, self.__train_label = shuffle(self.__train_feature, self.__train_label)
+        self.__train_feature = pd.concat(
+            [self.__train_feature,
+             self.__train_feature_stacking_tree,
+             self.__train_feature_stacking_linear,
+             self.__train_feature_stacking_network,
+             self.__train_feature_gp], axis=1
+        )
 
     def parameter_tuning(self):
         def __cv(
@@ -52,31 +65,31 @@ class BayesianOptimizationGoss(object):
                 colsample_bytree, subsample, reg_alpha, reg_lambda):
             val = cross_val_score(
                 LGBMClassifier(
-                    n_estimators=max(int(n_estimators), 1),
+                    n_estimators=max(int(round(n_estimators)), 1),
                     learning_rate=max(min(learning_rate, 1.0), 0),
-                    max_depth=max(int(max_depth), 1),
-                    # 如果 num_leaves > 2 ^ int(max_depth) 时 leaf-wise 的树就会太深导致 overfitting
-                    num_leaves=max(int(2 ^ int(max_depth) if num_leaves > 2 ^ int(max_depth) else int(num_leaves)), 1),
+                    max_depth=max(int(round(max_depth)), 1),
+                    # 如果 num_leaves > 2 ^ round(max_depth) 时 leaf-wise 的树就会太深导致 overfitting
+                    num_leaves=max(2 ^ int(round(max_depth)) if num_leaves > 2 ^ int(round(max_depth)) else int(round(num_leaves)), 1),
                     min_split_gain=max(min_split_gain, 0),
                     min_child_weight=max(min_child_weight, 0),
                     colsample_bytree=max(min(colsample_bytree, 1.0), 0),
                     subsample=max(min(subsample, 1.0), 0),
                     reg_alpha=max(reg_alpha, 0),
                     reg_lambda=max(reg_lambda, 0),
-                    n_jobs=4,
+                    n_jobs=-1,
                     verbose=-1
                 ),
                 self.__train_feature,
                 self.__train_label,
                 scoring="roc_auc",
-                cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=7)
+                cv=StratifiedKFold(n_splits=4, shuffle=True, random_state=8)
             ).mean()
 
             return val
 
         self.__gbm_params = {
             # Gradient boosting parameter
-            "n_estimators": (1000, 4000),
+            "n_estimators": (500, 3000),
             "learning_rate": (0.001, 0.1),
             # tree parameter
             "max_depth": (4, 10),
@@ -84,26 +97,14 @@ class BayesianOptimizationGoss(object):
             "min_split_gain": (0.00001, 0.1),
             "min_child_weight": (1, 100),
             # bagging parameter
-            "colsample_bytree": (0.6, 1.0),
-            "subsample": (0.6, 1.0),
+            "colsample_bytree": (0.1, 1.0),
+            "subsample": (0.1, 1.0),
             # reg parameter
             "reg_alpha": (0, 10),
             "reg_lambda": (0, 10)
         }
         self.__gbm_bo = BayesianOptimization(__cv, self.__gbm_params)
-        self.__gbm_bo.maximize(init_points=10,  n_iter=50, kappa=2.576*2, ** self.__gp_params)
-
-        print(self.__gbm_bo.res["max"]["max_val"])
-        print(self.__gbm_bo.res["max"]["max_params"]["n_estimators"])
-        print(self.__gbm_bo.res["max"]["max_params"]["learning_rate"])
-        print(self.__gbm_bo.res["max"]["max_params"]["max_depth"])
-        print(self.__gbm_bo.res["max"]["max_params"]["num_leaves"])
-        print(self.__gbm_bo.res["max"]["max_params"]["min_split_gain"])
-        print(self.__gbm_bo.res["max"]["max_params"]["min_child_weight"])
-        print(self.__gbm_bo.res["max"]["max_params"]["colsample_bytree"])
-        print(self.__gbm_bo.res["max"]["max_params"]["subsample"])
-        print(self.__gbm_bo.res["max"]["max_params"]["reg_alpha"])
-        print(self.__gbm_bo.res["max"]["max_params"]["reg_lambda"])
+        self.__gbm_bo.maximize(init_points=50,  n_iter=250, kappa=2.576*1.25, ** self.__gp_params)
 
 
 if __name__ == "__main__":

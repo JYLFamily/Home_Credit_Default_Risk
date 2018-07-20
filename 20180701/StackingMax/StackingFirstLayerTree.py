@@ -15,7 +15,7 @@ from catboost import CatBoostClassifier
 np.random.seed(7)
 
 
-class StackingMax(object):
+class StackingFirstLayerTree(object):
 
     def __init__(self, *, input_path, output_path):
         # import
@@ -46,7 +46,7 @@ class StackingMax(object):
         self.__skl_train_feature, self.__skl_test_feature = [None for _ in range(2)]
 
         self.__oof_train, self.__oof_test = [None for _ in range(2)]
-        self.__ext_source_train, self.__ext_source_test = [None for _ in range(2)]
+        # self.__ext_source_train, self.__ext_source_test = [None for _ in range(2)]
 
         # data output
         self.__first_layer_train, self.__first_layer_test = [None for _ in range(2)]
@@ -346,24 +346,15 @@ class StackingMax(object):
                 "xg_dart", "xg_tree", "xg_linear",
                 "et_gini", "et_entropy", "rf_gini", "rf_entropy"]
         )
-        self.__first_layer_train = pd.concat([
-            self.__oof_train,
-            self.__ext_source_train,
-            self.__train_label.to_frame("TARGET")],
-            axis=1
-        )
-        self.__first_layer_test = pd.concat([
-            self.__oof_test,
-            self.__ext_source_test],
-            axis=1
-        )
-        self.__first_layer_train.to_csv(os.path.join(self.__output_path, "first_layer_train.csv"), index=False)
-        self.__first_layer_test.to_csv(os.path.join(self.__output_path, "first_layer_test.csv"), index=False)
+        self.__first_layer_train = self.__oof_train
+        self.__first_layer_test = self.__oof_test
+        self.__first_layer_train.to_csv(os.path.join(self.__output_path, "first_layer_tree_train.csv"), index=False)
+        self.__first_layer_test.to_csv(os.path.join(self.__output_path, "first_layer_tree_test.csv"), index=False)
 
 
 if __name__ == "__main__":
 
-    sm = StackingMax(
+    sm = StackingFirstLayerTree(
         input_path=sys.argv[1],
         output_path=sys.argv[2]
     )

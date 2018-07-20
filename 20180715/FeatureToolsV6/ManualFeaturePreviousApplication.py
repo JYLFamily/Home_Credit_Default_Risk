@@ -12,6 +12,11 @@ class ManualFeaturePreviousApplication(object):
         self.__credit_card_balance = credit_card_balance.copy()
 
     def add_manual_feature(self):
+        # clean
+        self.__credit_card_balance["AMT_DRAWINGS_ATM_CURRENT"] = [np.nan if i < 0 else i for i in self.__credit_card_balance["AMT_DRAWINGS_ATM_CURRENT"]]
+        self.__credit_card_balance["AMT_DRAWINGS_CURRENT"] = [np.nan if i < 0 else i for i in self.__credit_card_balance["AMT_DRAWINGS_CURRENT"]]
+
+        # hand feature
         # 授信额度可能大于申请额度
         self.__previous_application["NEW_AMT_APPLICATION_DIVIDE_AMT_CREDIT"] = (
             # 申请额度 /

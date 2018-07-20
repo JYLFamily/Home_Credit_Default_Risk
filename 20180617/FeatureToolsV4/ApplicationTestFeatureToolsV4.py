@@ -192,6 +192,7 @@ class ApplicationTestFeatureToolsV4(object):
         )
         self.__es["previous_application"]["NAME_CONTRACT_STATUS_Refused"].interesting_values = [1]
         self.__es["previous_application"]["NAME_PRODUCT_TYPE_walk-in"].interesting_values = [1]
+        self.__es["previous_application"]["CODE_REJECT_REASON_HC"].interesting_values = [1]
 
     def dfs_run(self):
         self.__feature, _ = ft.dfs(

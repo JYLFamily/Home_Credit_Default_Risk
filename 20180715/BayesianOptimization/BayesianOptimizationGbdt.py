@@ -10,10 +10,10 @@ from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import StratifiedKFold
 from bayes_opt import BayesianOptimization
 from lightgbm import LGBMClassifier
-np.random.seed(8)
+np.random.seed(7)
 
 
-class BayesianOptimizationGoss(object):
+class BayesianOptimizationGbdt(object):
     def __init__(self, *, input_path):
         self.__input_path = input_path
 
@@ -21,10 +21,6 @@ class BayesianOptimizationGoss(object):
         self.__train = None
         self.__train_label = None
         self.__train_feature = None
-        self.__train_feature_stacking_tree = None
-        self.__train_feature_stacking_linear = None
-        self.__train_feature_stacking_network = None
-        self.__train_feature_gp = None
         self.__encoder = None
         self.__categorical_columns = None
 
@@ -35,10 +31,6 @@ class BayesianOptimizationGoss(object):
 
     def data_prepare(self):
         self.__train = pd.read_csv(os.path.join(self.__input_path, "train_select_feature_df.csv"))
-        self.__train_feature_stacking_tree = pd.read_csv(os.path.join(self.__input_path, "first_layer_tree_train.csv"))
-        self.__train_feature_stacking_linear = pd.read_csv(os.path.join(self.__input_path, "first_layer_linear_train.csv"))
-        self.__train_feature_stacking_network = pd.read_csv(os.path.join(self.__input_path, "first_layer_network_train.csv"))
-        self.__train_feature_gp = pd.read_csv(os.path.join(self.__input_path, "genetic_train_feature.csv"))
         self.__train_label = self.__train["TARGET"]
         self.__train_feature = self.__train.drop(
             ["TARGET"] + [col for col in self.__train.columns.tolist() if re.search(r"SK_ID", col)], axis=1)
@@ -50,31 +42,18 @@ class BayesianOptimizationGoss(object):
             self.__encoder.transform(self.__train_feature[self.__categorical_columns])
         )
 
-        self.__train_feature = pd.concat(
-            [self.__train_feature,
-             self.__train_feature_stacking_tree,
-             self.__train_feature_stacking_linear,
-             self.__train_feature_stacking_network], axis=1
-        )
-
     def parameter_tuning(self):
         def __cv(
-                drop_rate, max_drop, skip_drop,
                 n_estimators, learning_rate,
                 max_depth, num_leaves, min_split_gain, min_child_weight,
                 colsample_bytree, subsample, reg_alpha, reg_lambda):
             val = cross_val_score(
                 LGBMClassifier(
-                    boosting_type="dart",
-                    drop_rate=max(min(drop_rate, 1.0), 0),
-                    max_drop=max(round(max_drop), 1),
-                    skip_drop=max(min(skip_drop, 1.0), 0),
-                    n_estimators=max(round(n_estimators), 1),
+                    n_estimators=max(int(round(n_estimators)), 1),
                     learning_rate=max(min(learning_rate, 1.0), 0),
-                    max_depth=max(round(max_depth), 1),
-                    num_leaves=(
-                        max(round(2 ^ round(max_depth) if num_leaves > 2 ^ round(max_depth) else round(num_leaves)), 1)
-                    ),
+                    max_depth=max(int(round(max_depth)), 1),
+                    # 如果 num_leaves > 2 ^ round(max_depth) 时 leaf-wise 的树就会太深导致 overfitting
+                    num_leaves=max(2 ^ int(round(max_depth)) if num_leaves > 2 ^ int(round(max_depth)) else int(round(num_leaves)), 1),
                     min_split_gain=max(min_split_gain, 0),
                     min_child_weight=max(min_child_weight, 0),
                     colsample_bytree=max(min(colsample_bytree, 1.0), 0),
@@ -87,20 +66,15 @@ class BayesianOptimizationGoss(object):
                 self.__train_feature,
                 self.__train_label,
                 scoring="roc_auc",
-                # 要与使用 blending 的 lightgbm 相同
-                cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=8)
+                cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=7)
             ).mean()
 
             return val
 
         self.__gbm_params = {
-            # dart parameter
-            "drop_rate": (0, 1.0),
-            "max_drop": (10, 200),
-            "skip_drop": (0, 1.0),
             # Gradient boosting parameter
-            "n_estimators": (500, 3000),
-            "learning_rate": (0.001, 0.1),
+            "n_estimators": (2000, 5000),
+            "learning_rate": (0.001, 0.06),
             # tree parameter
             "max_depth": (4, 10),
             "num_leaves": (10, 200),
@@ -114,11 +88,11 @@ class BayesianOptimizationGoss(object):
             "reg_lambda": (0, 10)
         }
         self.__gbm_bo = BayesianOptimization(__cv, self.__gbm_params)
-        self.__gbm_bo.maximize(init_points=30,  n_iter=130, ** self.__gp_params)
+        self.__gbm_bo.maximize(init_points=50,  n_iter=250, kappa=2.576*1.25, ** self.__gp_params)
 
 
 if __name__ == "__main__":
-    botp = BayesianOptimizationGoss(
+    botp = BayesianOptimizationGbdt(
         input_path=sys.argv[1]
     )
     botp.data_prepare()

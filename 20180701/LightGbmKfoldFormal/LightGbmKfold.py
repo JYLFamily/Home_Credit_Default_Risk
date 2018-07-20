@@ -9,7 +9,7 @@ from category_encoders import TargetEncoder
 from sklearn.model_selection import StratifiedKFold
 from lightgbm import LGBMClassifier
 from sklearn.metrics import roc_auc_score
-np.random.seed(7)
+np.random.seed(8)
 
 
 class LightGbmKfold(object):
@@ -20,6 +20,10 @@ class LightGbmKfold(object):
         self.__sample_submission = None
         self.__train, self.__test = [None for _ in range(2)]
         self.__train_feature, self.__test_feature = [None for _ in range(2)]
+        self.__train_feature_stacking_tree, self.__test_feature_stacking_tree = [None for _ in range(2)]
+        self.__train_feature_stacking_linear, self.__test_feature_stacking_linear = [None for _ in range(2)]
+        self.__train_feature_stacking_network, self.__test_feature_stacking_network = [None for _ in range(2)]
+        self.__train_feature_stacking_gp, self.__test_feature_stacking_gp = [None for _ in range(2)]
         self.__train_label = None
         self.__categorical_columns = None
         self.__encoder = None
@@ -29,12 +33,36 @@ class LightGbmKfold(object):
         self.__oof_preds = None
         self.__sub_preds = None
         self.__gbm = None
-        self.__metric_weight = []
+        # self.__metric_weight = []
 
     def data_prepare(self):
         self.__sample_submission = pd.read_csv(os.path.join(self.__input_path, "sample_submission.csv"))
-        self.__train = pd.read_csv(os.path.join(self.__input_path, "train_select_feature_df.csv"))
-        self.__test = pd.read_csv(os.path.join(self.__input_path, "test_select_feature_df.csv"))
+
+        # selected feature
+        self.__train = pd.read_csv(
+            os.path.join(self.__input_path, "train_select_feature_df.csv"))
+        self.__test = pd.read_csv(
+            os.path.join(self.__input_path, "test_select_feature_df.csv"))
+        # stacking tree
+        self.__train_feature_stacking_tree = pd.read_csv(
+            os.path.join(self.__input_path, "first_layer_tree_train.csv"))
+        self.__test_feature_stacking_tree = pd.read_csv(
+            os.path.join(self.__input_path, "first_layer_tree_test.csv"))
+        # stacking linear
+        self.__train_feature_stacking_linear = pd.read_csv(
+            os.path.join(self.__input_path, "first_layer_linear_train.csv"))
+        self.__test_feature_stacking_linear = pd.read_csv(
+            os.path.join(self.__input_path, "first_layer_linear_test.csv"))
+        # stacking network
+        self.__train_feature_stacking_network = pd.read_csv(
+            os.path.join(self.__input_path, "first_layer_network_train.csv"))
+        self.__test_feature_stacking_network = pd.read_csv(
+            os.path.join(self.__input_path, "first_layer_network_test.csv"))
+        # gp
+        self.__train_feature_stacking_gp = pd.read_csv(
+            os.path.join(self.__input_path, "genetic_train_feature.csv"))
+        self.__test_feature_stacking_gp = pd.read_csv(
+            os.path.join(self.__input_path, "genetic_test_feature.csv"))
 
         self.__train_label = self.__train["TARGET"]
         self.__train_feature = self.__train.drop(
@@ -51,8 +79,23 @@ class LightGbmKfold(object):
             self.__encoder.transform(self.__test_feature.loc[:, self.__categorical_columns])
         )
 
+        self.__train_feature = pd.concat(
+            [self.__train_feature,
+             self.__train_feature_stacking_tree,
+             self.__train_feature_stacking_linear,
+             self.__train_feature_stacking_network,
+             self.__train_feature_stacking_gp], axis=1
+        )
+        self.__test_feature = pd.concat(
+            [self.__test_feature,
+             self.__test_feature_stacking_tree,
+             self.__test_feature_stacking_linear,
+             self.__test_feature_stacking_network,
+             self.__test_feature_stacking_gp], axis=1
+        )
+
     def model_fit(self):
-        self.__folds = StratifiedKFold(n_splits=5, shuffle=True)
+        self.__folds = StratifiedKFold(n_splits=4, shuffle=True, random_state=8)
         self.__oof_preds = np.zeros(shape=self.__train_feature.shape[0])
         self.__sub_preds = np.zeros(shape=self.__test_feature.shape[0])
         # self.__sub_preds = np.zeros(shape=(self.__test_feature.shape[0], 5))
@@ -63,20 +106,16 @@ class LightGbmKfold(object):
             val_x, val_y = self.__train_feature.iloc[val_idx], self.__train_label.iloc[val_idx]
 
             self.__gbm = LGBMClassifier(
-                boosting_type="dart",
-                colsample_bytree=0.9106,
-                drop_rate=0.4418,
-                learning_rate=0.0255,
-                max_depth=9,
-                max_drop=12,
-                min_child_weight=24.3637,
-                min_split_gain=0.0178,
-                n_estimators=3995,
-                num_leaves=14,
-                reg_alpha=6.8579,
-                reg_lambda=2.3387,
-                skip_drop=0.6778,
-                subsample=0.8911
+                colsample_bytree=0.6659,
+                learning_rate=0.0197,
+                max_depth=8,
+                min_child_weight=1.0652,
+                min_split_gain=0.058,
+                n_estimators=501,
+                num_leaves=11,
+                reg_alpha=2.2487,
+                reg_lambda=6.2587,
+                subsample=0.9401
             )
 
             self.__gbm.fit(
@@ -85,7 +124,7 @@ class LightGbmKfold(object):
                 eval_set=[(trn_x, trn_y), (val_x, val_y)],
                 eval_metric="auc",
                 verbose=True,
-                early_stopping_rounds=200
+                early_stopping_rounds=5
             )
             pred_val = self.__gbm.predict_proba(val_x, num_iteration=self.__gbm.best_iteration_)[:, 1]
             pred_test = self.__gbm.predict_proba(self.__test_feature, num_iteration=self.__gbm.best_iteration_)[:, 1]
@@ -100,7 +139,7 @@ class LightGbmKfold(object):
             fold_importance_df["fold"] = n_fold + 1
             feature_importance_df = pd.concat([feature_importance_df, fold_importance_df], axis=0)
             # 保存 weight
-            self.__metric_weight.append(roc_auc_score(val_y, self.__oof_preds[val_idx]))
+            # self.__metric_weight.append(roc_auc_score(val_y, self.__oof_preds[val_idx]))
             print("Fold %2d AUC : %.6f" % (n_fold + 1, roc_auc_score(val_y, self.__oof_preds[val_idx])))
 
         feature_importance_df.to_csv(os.path.join(self.__output_path, "feature_importance.csv"), index=False)

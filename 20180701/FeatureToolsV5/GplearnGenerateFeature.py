@@ -1,6 +1,7 @@
 # coding:utf-8
 
 import os
+import sys
 import numpy as np
 import pandas as pd
 from category_encoders import TargetEncoder
@@ -38,11 +39,11 @@ class GplearnGenerateFeature(object):
         self.__feature_top_column = list(self.__feature_importance.iloc[0:200, 0])
 
         self.__train = pd.read_csv(
-            "D:\\Kaggle\\Home_Credit_Default_Risk\\feature_data_V5\\train_select_feature_df.csv",
+            os.path.join(self.__input_path, "train_select_feature_df.csv"),
             usecols=self.__feature_top_column+["TARGET"]
         )
         self.__test = pd.read_csv(
-            "D:\\Kaggle\\Home_Credit_Default_Risk\\feature_data_V5\\test_select_feature_df.csv",
+            os.path.join(self.__input_path, "test_select_feature_df.csv"),
             usecols=self.__feature_top_column
         )
 
@@ -75,7 +76,14 @@ class GplearnGenerateFeature(object):
         )
 
     def feature_generate(self):
-        self.__genetic_transformer = SymbolicTransformer(metric="spearman", n_jobs=-1, verbose=1)
+        self.__genetic_transformer = SymbolicTransformer(
+            population_size=10000,
+            generations=200,
+            tournament_size=200,
+            metric="spearman",
+            n_jobs=-1,
+            verbose=1
+        )
         self.__genetic_transformer.fit(
             self.__train_feature, self.__train_label
         )
@@ -97,8 +105,8 @@ class GplearnGenerateFeature(object):
 
 if __name__ == "__main__":
     ggf = GplearnGenerateFeature(
-        input_path="D:\\Code\\Python\\Home_Credit_Default_Risk\\20180701\\FeatureToolsV5\\",
-        output_path="D:\\Kaggle\\Home_Credit_Default_Risk\\feature_data_V5"
+        input_path=sys.argv[1],
+        output_path=sys.argv[2]
     )
     ggf.data_prepare()
     ggf.feature_generate()
