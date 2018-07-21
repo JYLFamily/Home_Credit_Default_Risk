@@ -50,7 +50,7 @@ class ManualFeaturePreviousApplication(object):
             self.__installments_payments["AMT_PAYMENT"] / self.__installments_payments["AMT_INSTALMENT"].replace(0, np.nan)
         )
         self.__installments_payments["NEW_AMT_PAYMENT_MINUS_AMT_INSTALMENT"] = (
-            # 实付款 /
+            # 实付款 -
             # 应付款
             self.__installments_payments["AMT_PAYMENT"] - self.__installments_payments["AMT_INSTALMENT"]
         )
