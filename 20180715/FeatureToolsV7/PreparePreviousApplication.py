@@ -17,10 +17,10 @@ class PreparePreviousApplication(object):
         self.__start_time = pd.Timestamp("2018-07-20")
 
     def data_prepare(self):
-        self.__previous_application = pd.read_csv(os.path.join(self.__input_path, "previous_application.csv"))
+        self.__previous_application = pd.read_csv(os.path.join(self.__input_path, "previous_application.csv"), nrows=10)
 
     def data_transform(self):
-        # self.__previous_application = self.__previous_application.replace(365243.0, np.nan)
+        self.__previous_application = self.__previous_application.replace(365243.0, np.nan)
         self.__previous_application["DAYS_DECISION"] = pd.to_timedelta(self.__previous_application["DAYS_DECISION"], "D")
         self.__previous_application["DAYS_FIRST_DRAWING"] = pd.to_timedelta(self.__previous_application["DAYS_FIRST_DRAWING"], "D")
         self.__previous_application["DAYS_FIRST_DUE"] = pd.to_timedelta(self.__previous_application["DAYS_FIRST_DUE"], "D")
@@ -35,9 +35,13 @@ class PreparePreviousApplication(object):
         self.__previous_application["DAYS_LAST_DUE"] += self.__start_time
         self.__previous_application["DAYS_TERMINATION"] += self.__start_time
 
+        # 方便后续 featuretools 制定 variable types
+        for col in self.__previous_application.columns.tolist():
+            if col in self.__previous_application.select_dtypes(include="object").columns.tolist():
+                self.__previous_application.rename(columns={col: "FLAG_PREVIOUS_APPLICATION_" + col}, inplace=True)
+
         self.__previous_application = pd.get_dummies(
             data=self.__previous_application,
-            prefix="FLAG_PREVIOUS_APPLICATION",
             dummy_na=True,
             columns=self.__previous_application.select_dtypes(include="object").columns.tolist()
         )
@@ -72,7 +76,7 @@ class PreparePreviousApplication(object):
         )
 
     def data_return(self):
-        # print(self.__previous_application.head())
+        # print(self.__previous_application.shape)
 
         return self.__previous_application
 
@@ -84,3 +88,4 @@ if __name__ == "__main__":
     ppa.data_prepare()
     ppa.data_transform()
     ppa.data_generate()
+    ppa.data_return()

@@ -17,16 +17,20 @@ class PrepareCreditCard(object):
         self.__start_time = pd.Timestamp("2018-07-20")
 
     def data_prepare(self):
-        self.__credit_card = pd.read_csv(os.path.join(self.__input_path, "credit_card_balance.csv"))
+        self.__credit_card = pd.read_csv(os.path.join(self.__input_path, "credit_card_balance.csv"), nrows=10)
+        self.__credit_card = self.__credit_card.drop(["SK_ID_CURR"], axis=1)
 
     def data_transform(self):
-        # self.__credit_card = self.__credit_card.replace(365243.0, np.nan)
         self.__credit_card["MONTHS_BALANCE"] = pd.to_timedelta(self.__credit_card["MONTHS_BALANCE"], "M")
         self.__credit_card["MONTHS_BALANCE"] += self.__start_time
 
+        # 方便后续 featuretools 制定 variable types
+        for col in self.__credit_card.columns.tolist():
+            if col in self.__credit_card.select_dtypes(include="object").columns.tolist():
+                self.__credit_card.rename(columns={col: "FLAG_CREDIT_CARD_" + col}, inplace=True)
+
         self.__credit_card = pd.get_dummies(
             data=self.__credit_card,
-            prefix="FLAG_CREDIT_CARD",
             dummy_na=True,
             columns=self.__credit_card.select_dtypes(include="object").columns.tolist()
         )
@@ -73,7 +77,7 @@ class PrepareCreditCard(object):
         )
 
     def data_return(self):
-        # print(self.__credit_card.head())
+        # print(self.__credit_card.shape)
 
         return self.__credit_card
 
