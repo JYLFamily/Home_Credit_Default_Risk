@@ -39,6 +39,7 @@ class FeatureToolsTrainV7(object):
 
         # es set
         self.__es = None
+        self.__train_feature_matrix = None
         self.__train_feature = None
         self.__application_train_df_variable_types = dict()
         self.__bureau_df_variable_types = dict()
@@ -216,16 +217,26 @@ class FeatureToolsTrainV7(object):
         self.__es["bureau"]["FLAG_BUREAU_CREDIT_ACTIVE_Closed"].interesting_values = [1]
 
     def dfs_run(self):
-        self.__train_feature, _ = ft.dfs(
+        _, self.__train_feature = ft.dfs(
             entityset=self.__es,
             target_entity="application_train",
             agg_primitives=[Sum, Std, Max, Min, Median, Count, PercentTrue, Trend, AvgTimeBetween],
             where_primitives=[Std, Max, Min, Median, Count],
             verbose=True,
+            n_jobs=2,
             chunk_size=10  # 调大 chunk_size 以时间换空间, 加大内存占用减少运行时间
         )
 
-        self.__train_feature.to_csv(os.path.join(self.__output_path, "train_feature_df.csv"), index=True)
+        # ft.save_features(self.__train_feature, os.path.join(self.__output_path, "train_feature_definitions"))
+        # self.__train_feature = ft.load_features("train_feature_definitions")
+
+        # self.__train_feature_matrix = ft.calculate_feature_matrix(
+        #     features=self.__train_feature,
+        #     entityset=self.__es,
+        #     n_jobs=2
+        # )
+        #
+        # self.__train_feature_matrix.to_csv(os.path.join(self.__output_path, "train_feature_df.csv"), index=True)
 
 if __name__ == "__main__":
     ftt = FeatureToolsTrainV7(
