@@ -30,15 +30,15 @@ class PrepareBureau(object):
 
     def data_transform(self):
         # self.__bureau = self.__bureau.replace(365243.0, np.nan)
-        self.__bureau["DAYS_CREDIT"] = pd.to_timedelta(self.__bureau["DAYS_CREDIT"], "D")
-        self.__bureau["DAYS_CREDIT_ENDDATE"] = pd.to_timedelta(self.__bureau["DAYS_CREDIT_ENDDATE"], "D")
-        self.__bureau["DAYS_ENDDATE_FACT"] = pd.to_timedelta(self.__bureau["DAYS_ENDDATE_FACT"], "D")
-        self.__bureau["DAYS_CREDIT_UPDATE"] = pd.to_timedelta(self.__bureau["DAYS_CREDIT_UPDATE"], "D")
+        self.__bureau["TIME_DAYS_CREDIT"] = pd.to_timedelta(self.__bureau["DAYS_CREDIT"], "D")
+        self.__bureau["TIME_DAYS_CREDIT_ENDDATE"] = pd.to_timedelta(self.__bureau["DAYS_CREDIT_ENDDATE"], "D")
+        self.__bureau["TIME_DAYS_ENDDATE_FACT"] = pd.to_timedelta(self.__bureau["DAYS_ENDDATE_FACT"], "D")
+        self.__bureau["TIME_DAYS_CREDIT_UPDATE"] = pd.to_timedelta(self.__bureau["DAYS_CREDIT_UPDATE"], "D")
 
-        self.__bureau["DAYS_CREDIT"] += self.__start_time
-        self.__bureau["DAYS_CREDIT_ENDDATE"] += self.__start_time
-        self.__bureau["DAYS_ENDDATE_FACT"] += self.__start_time
-        self.__bureau["DAYS_CREDIT_UPDATE"] += self.__start_time
+        self.__bureau["TIME_DAYS_CREDIT"] += self.__start_time
+        self.__bureau["TIME_DAYS_CREDIT_ENDDATE"] += self.__start_time
+        self.__bureau["TIME_DAYS_ENDDATE_FACT"] += self.__start_time
+        self.__bureau["TIME_DAYS_CREDIT_UPDATE"] += self.__start_time
 
         # 方便后续 featuretools 制定 variable types
         for col in self.__bureau.columns.tolist():
@@ -125,14 +125,15 @@ class PrepareBureau(object):
         )
 
     def data_return(self):
-        # print(self.__bureau.shape)
+        # print(self.__bureau.head())
+        # self.__bureau.to_csv(os.path.join(self.__input_path, "bureau_temp.csv"), index=False)
 
         return self.__bureau
 
 
 if __name__ == "__main__":
     pb = PrepareBureau(
-        input_path="C:\\Users\\puhui\\Desktop"
+        input_path="D:\\Kaggle\\Home_Credit_Default_Risk\\clean_data"
     )
     pb.data_prepare()
     pb.data_transform()

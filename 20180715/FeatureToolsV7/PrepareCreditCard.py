@@ -21,8 +21,8 @@ class PrepareCreditCard(object):
         self.__credit_card = self.__credit_card.drop(["SK_ID_CURR"], axis=1)
 
     def data_transform(self):
-        self.__credit_card["MONTHS_BALANCE"] = pd.to_timedelta(self.__credit_card["MONTHS_BALANCE"], "M")
-        self.__credit_card["MONTHS_BALANCE"] += self.__start_time
+        self.__credit_card["TIME_MONTHS_BALANCE"] = pd.to_timedelta(self.__credit_card["MONTHS_BALANCE"], "M")
+        self.__credit_card["TIME_MONTHS_BALANCE"] += self.__start_time
 
         # 方便后续 featuretools 制定 variable types
         for col in self.__credit_card.columns.tolist():
@@ -77,13 +77,14 @@ class PrepareCreditCard(object):
         )
 
     def data_return(self):
-        # print(self.__credit_card.shape)
+        # print(self.__credit_card.head())
+        # self.__credit_card.to_csv(os.path.join(self.__input_path, "credit_card_temp.csv"), index=False)
 
         return self.__credit_card
 
 if __name__ == "__main__":
     pcc = PrepareCreditCard(
-        input_path="C:\\Users\\puhui\\Desktop"
+        input_path="D:\\Kaggle\\Home_Credit_Default_Risk\\clean_data"
     )
     pcc.data_prepare()
     pcc.data_transform()

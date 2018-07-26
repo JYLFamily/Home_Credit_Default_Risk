@@ -20,20 +20,20 @@ class PreparePreviousApplication(object):
         self.__previous_application = pd.read_csv(os.path.join(self.__input_path, "previous_application.csv"), nrows=10)
 
     def data_transform(self):
-        self.__previous_application = self.__previous_application.replace(365243.0, np.nan)
-        self.__previous_application["DAYS_DECISION"] = pd.to_timedelta(self.__previous_application["DAYS_DECISION"], "D")
-        self.__previous_application["DAYS_FIRST_DRAWING"] = pd.to_timedelta(self.__previous_application["DAYS_FIRST_DRAWING"], "D")
-        self.__previous_application["DAYS_FIRST_DUE"] = pd.to_timedelta(self.__previous_application["DAYS_FIRST_DUE"], "D")
-        self.__previous_application["DAYS_LAST_DUE_1ST_VERSION"] = pd.to_timedelta(self.__previous_application["DAYS_LAST_DUE_1ST_VERSION"], "D")
-        self.__previous_application["DAYS_LAST_DUE"] = pd.to_timedelta(self.__previous_application["DAYS_LAST_DUE"], "D")
-        self.__previous_application["DAYS_TERMINATION"] = pd.to_timedelta(self.__previous_application["DAYS_TERMINATION"], "D")
+        # self.__previous_application = self.__previous_application.replace(365243.0, np.nan)
+        self.__previous_application["TIME_DAYS_DECISION"] = pd.to_timedelta(self.__previous_application["DAYS_DECISION"], "D")
+        self.__previous_application["TIME_DAYS_FIRST_DRAWING"] = pd.to_timedelta(self.__previous_application["DAYS_FIRST_DRAWING"], "D")
+        self.__previous_application["TIME_DAYS_FIRST_DUE"] = pd.to_timedelta(self.__previous_application["DAYS_FIRST_DUE"], "D")
+        self.__previous_application["TIME_DAYS_LAST_DUE_1ST_VERSION"] = pd.to_timedelta(self.__previous_application["DAYS_LAST_DUE_1ST_VERSION"], "D")
+        self.__previous_application["TIME_DAYS_LAST_DUE"] = pd.to_timedelta(self.__previous_application["DAYS_LAST_DUE"], "D")
+        self.__previous_application["TIME_DAYS_TERMINATION"] = pd.to_timedelta(self.__previous_application["DAYS_TERMINATION"], "D")
 
-        self.__previous_application["DAYS_DECISION"] += self.__start_time
-        self.__previous_application["DAYS_FIRST_DRAWING"] += self.__start_time
-        self.__previous_application["DAYS_FIRST_DUE"] += self.__start_time
-        self.__previous_application["DAYS_LAST_DUE_1ST_VERSION"] += self.__start_time
-        self.__previous_application["DAYS_LAST_DUE"] += self.__start_time
-        self.__previous_application["DAYS_TERMINATION"] += self.__start_time
+        self.__previous_application["TIME_DAYS_DECISION"] += self.__start_time
+        self.__previous_application["TIME_DAYS_FIRST_DRAWING"] += self.__start_time
+        self.__previous_application["TIME_DAYS_FIRST_DUE"] += self.__start_time
+        self.__previous_application["TIME_DAYS_LAST_DUE_1ST_VERSION"] += self.__start_time
+        self.__previous_application["TIME_DAYS_LAST_DUE"] += self.__start_time
+        self.__previous_application["TIME_DAYS_TERMINATION"] += self.__start_time
 
         # 方便后续 featuretools 制定 variable types
         for col in self.__previous_application.columns.tolist():
@@ -77,13 +77,14 @@ class PreparePreviousApplication(object):
 
     def data_return(self):
         # print(self.__previous_application.shape)
+        # self.__previous_application.to_csv(os.path.join(self.__input_path, "previous_application_temp.csv"), index=False)
 
         return self.__previous_application
 
 
 if __name__ == "__main__":
     ppa = PreparePreviousApplication(
-        input_path="C:\\Users\\puhui\\Desktop"
+        input_path="D:\\Kaggle\\Home_Credit_Default_Risk\\clean_data"
     )
     ppa.data_prepare()
     ppa.data_transform()

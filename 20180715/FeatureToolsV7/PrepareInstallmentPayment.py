@@ -22,11 +22,11 @@ class PrepareInstallmentPayment(object):
 
     def data_transform(self):
         # self.__installment_payment = self.__installment_payment.replace(365243.0, np.nan)
-        self.__installment_payment["DAYS_INSTALMENT"] = pd.to_timedelta(self.__installment_payment["DAYS_INSTALMENT"], "D")
-        self.__installment_payment["DAYS_ENTRY_PAYMENT"] = pd.to_timedelta(self.__installment_payment["DAYS_ENTRY_PAYMENT"], "D")
+        self.__installment_payment["TIME_DAYS_INSTALMENT"] = pd.to_timedelta(self.__installment_payment["DAYS_INSTALMENT"], "D")
+        self.__installment_payment["TIME_DAYS_ENTRY_PAYMENT"] = pd.to_timedelta(self.__installment_payment["DAYS_ENTRY_PAYMENT"], "D")
 
-        self.__installment_payment["DAYS_INSTALMENT"] += self.__start_time
-        self.__installment_payment["DAYS_ENTRY_PAYMENT"] += self.__start_time
+        self.__installment_payment["TIME_DAYS_INSTALMENT"] += self.__start_time
+        self.__installment_payment["TIME_DAYS_ENTRY_PAYMENT"] += self.__start_time
 
         # 方便后续 featuretools 制定 variable types
         for col in self.__installment_payment.columns.tolist():
@@ -44,12 +44,12 @@ class PrepareInstallmentPayment(object):
         self.__installment_payment["NEW_DAYS_ENTRY_PAYMENT_MINUS_DAYS_INSTALMENT_BEFORE"] = (
             # 提前还款天数
             # series 需要对每个 time 类型引用 int
-            (self.__installment_payment["DAYS_INSTALMENT"] - self.__installment_payment["DAYS_ENTRY_PAYMENT"]).apply(lambda x: x.days)
+            (self.__installment_payment["TIME_DAYS_INSTALMENT"] - self.__installment_payment["TIME_DAYS_ENTRY_PAYMENT"]).apply(lambda x: x.days)
         ).apply(lambda x: x if x > 0 else 0)
 
         self.__installment_payment["NEW_DAYS_ENTRY_PAYMENT_MINUS_DAYS_INSTALMENT_OVERDUE"] = (
             # 逾期天数
-            (self.__installment_payment["DAYS_ENTRY_PAYMENT"] - self.__installment_payment["DAYS_INSTALMENT"]).apply(lambda x: x.days)
+            (self.__installment_payment["TIME_DAYS_ENTRY_PAYMENT"] - self.__installment_payment["TIME_DAYS_INSTALMENT"]).apply(lambda x: x.days)
         ).apply(lambda x: x if x > 0 else 0)
 
         self.__installment_payment["NEW_AMT_PAYMENT_DIVIDE_AMT_INSTALMENT"] = (
@@ -66,13 +66,14 @@ class PrepareInstallmentPayment(object):
 
     def data_return(self):
         # print(self.__installment_payment.shape)
+        # self.__installment_payment.to_csv(os.path.join(self.__input_path, "installment_payment_temp.csv"), index=False)
 
         return self.__installment_payment
 
 
 if __name__ == "__main__":
     pip = PrepareInstallmentPayment(
-        input_path="C:\\Users\\puhui\\Desktop"
+        input_path="D:\\Kaggle\\Home_Credit_Default_Risk\\clean_data"
     )
     pip.data_prepare()
     pip.data_transform()

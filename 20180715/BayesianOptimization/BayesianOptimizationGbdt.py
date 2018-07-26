@@ -66,15 +66,15 @@ class BayesianOptimizationGbdt(object):
                 self.__train_feature,
                 self.__train_label,
                 scoring="roc_auc",
-                cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=7)
+                cv=StratifiedKFold(n_splits=3, shuffle=True, random_state=7)
             ).mean()
 
             return val
 
         self.__gbm_params = {
             # Gradient boosting parameter
-            "n_estimators": (2000, 5000),
-            "learning_rate": (0.001, 0.06),
+            "n_estimators": (5000, 7000),
+            "learning_rate": (0.001, 0.03),
             # tree parameter
             "max_depth": (4, 10),
             "num_leaves": (10, 200),
@@ -88,7 +88,7 @@ class BayesianOptimizationGbdt(object):
             "reg_lambda": (0, 10)
         }
         self.__gbm_bo = BayesianOptimization(__cv, self.__gbm_params)
-        self.__gbm_bo.maximize(init_points=50,  n_iter=250, kappa=2.576*1.25, ** self.__gp_params)
+        self.__gbm_bo.maximize(init_points=10,  n_iter=50, ** self.__gp_params)
 
 
 if __name__ == "__main__":

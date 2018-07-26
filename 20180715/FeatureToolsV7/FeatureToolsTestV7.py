@@ -18,12 +18,11 @@ from featuretools.primitives import AvgTimeBetween
 # from dask.distributed import LocalCluster
 
 
-class FeatureToolsTrainV7(object):
-
+class FeatureToolsTestV7(object):
     def __init__(self, input_path, output_path):
         # init
         self.__input_path, self.__output_path = input_path, output_path
-        self.__prepare_application_train = importlib.import_module("PrepareApplicationTrain")
+        self.__prepare_application_test = importlib.import_module("PrepareApplicationTest")
         self.__prepare_bureau = importlib.import_module("PrepareBureau")
         self.__prepare_bureau_balance = importlib.import_module("PrepareBureauBalance")
         self.__prepare_previous_application = importlib.import_module("PreparePreviousApplication")
@@ -32,7 +31,7 @@ class FeatureToolsTrainV7(object):
         self.__prepare_pos_cash = importlib.import_module("PreparePosCash")
 
         # data prepare
-        self.__application_train_df = None
+        self.__application_test_df = None
         self.__bureau_df = None
         self.__bureau_balance_df = None
         self.__previous_application_df = None
@@ -42,9 +41,9 @@ class FeatureToolsTrainV7(object):
 
         # es set
         self.__es = None
-        self.__train_feature_matrix = None
-        self.__train_feature = None
-        self.__application_train_df_variable_types = dict()
+        self.__test_feature_matrix = None
+        self.__test_feature = None
+        self.__application_test_df_variable_types = dict()
         self.__bureau_df_variable_types = dict()
         self.__bureau_balance_df_variable_types = dict()
         self.__previous_application_df_variable_types = dict()
@@ -56,11 +55,11 @@ class FeatureToolsTrainV7(object):
         # self.__cluster = None
 
     def data_prepare(self):
-        pat = self.__prepare_application_train.PrepareApplicationTrain(input_path=self.__input_path)
+        pat = self.__prepare_application_test.PrepareApplicationTest(input_path=self.__input_path)
         pat.data_prepare()
         pat.data_transform()
         pat.data_generate()
-        self.__application_train_df = pat.data_return()
+        self.__application_test_df = pat.data_return()
 
         pb = self.__prepare_bureau.PrepareBureau(input_path=self.__input_path)
         pb.data_prepare()
@@ -98,7 +97,7 @@ class FeatureToolsTrainV7(object):
         ppc.data_generate()
         self.__pos_cash_df = ppc.data_return()
 
-        self.__application_train_df["SK_ID_CURR"] = self.__application_train_df["SK_ID_CURR"].astype(np.int64)
+        self.__application_test_df["SK_ID_CURR"] = self.__application_test_df["SK_ID_CURR"].astype(np.int64)
         self.__bureau_df["SK_ID_CURR"] = self.__bureau_df["SK_ID_CURR"].astype(np.int64)
         self.__bureau_df["SK_ID_BUREAU"] = self.__bureau_df["SK_ID_BUREAU"].astype(np.int64)
         self.__bureau_balance_df["SK_ID_BUREAU"] = self.__bureau_balance_df["SK_ID_BUREAU"].astype(np.int64)
@@ -109,8 +108,8 @@ class FeatureToolsTrainV7(object):
         self.__pos_cash_df["SK_ID_PREV"] = self.__pos_cash_df["SK_ID_PREV"].astype(np.int64)
 
     def es_set(self):
-        for col in self.__application_train_df.select_dtypes("object").columns.tolist():
-            self.__application_train_df_variable_types[col] = ft.variable_types.Categorical
+        for col in self.__application_test_df.select_dtypes("object").columns.tolist():
+            self.__application_test_df_variable_types[col] = ft.variable_types.Categorical
 
         for col in self.__bureau_df.columns.tolist():
             if re.search(r"FLAG", col):
@@ -136,12 +135,12 @@ class FeatureToolsTrainV7(object):
             if re.search(r"FLAG", col):
                 self.__pos_cash_df_variable_types[col] = ft.variable_types.Boolean
 
-        self.__es = ft.EntitySet(id="application_train")
+        self.__es = ft.EntitySet(id="application_test")
         self.__es = self.__es.entity_from_dataframe(
-            entity_id="application_train",
-            dataframe=self.__application_train_df,
+            entity_id="application_test",
+            dataframe=self.__application_test_df,
             index="SK_ID_CURR",
-            variable_types=self.__application_train_df_variable_types
+            variable_types=self.__application_test_df_variable_types
         )
         self.__es = self.__es.entity_from_dataframe(
             entity_id="bureau",
@@ -191,7 +190,7 @@ class FeatureToolsTrainV7(object):
         )
         self.__es = self.__es.add_relationship(
             ft.Relationship(
-                self.__es["application_train"]["SK_ID_CURR"],
+                self.__es["application_test"]["SK_ID_CURR"],
                 self.__es["bureau"]["SK_ID_CURR"]
             )
         )
@@ -203,7 +202,7 @@ class FeatureToolsTrainV7(object):
         )
         self.__es = self.__es.add_relationship(
             ft.Relationship(
-                self.__es["application_train"]["SK_ID_CURR"],
+                self.__es["application_test"]["SK_ID_CURR"],
                 self.__es["previous_application"]["SK_ID_CURR"]
             )
         )
@@ -238,19 +237,19 @@ class FeatureToolsTrainV7(object):
         #     memory_limit="20g"
         # )
 
-        # self.__train_feature_matrix, self.__train_feature = ft.dfs(
+        # self.__test_feature_matrix, self.__test_feature = ft.dfs(
         #     entityset=self.__es,
-        #     target_entity="application_train",
+        #     target_entity="application_test",
         #     agg_primitives=[Sum, Std, Max, Min, Median, Count, PercentTrue, Trend, AvgTimeBetween],
         #     trans_primitives=[],
         #     where_primitives=[Std, Max, Min, Median, Count],
         #     dask_kwargs={"cluster": self.__cluster},
         #     verbose=True
         # )
-        
-        self.__train_feature_matrix, self.__train_feature = ft.dfs(
+
+        self.__test_feature_matrix, self.__test_feature = ft.dfs(
             entityset=self.__es,
-            target_entity="application_train",
+            target_entity="application_test",
             agg_primitives=[Sum, Std, Max, Min, Median, Count, PercentTrue, Trend, AvgTimeBetween],
             trans_primitives=[],
             where_primitives=[Std, Max, Min, Median, Count],
@@ -258,21 +257,22 @@ class FeatureToolsTrainV7(object):
             chunk_size=110
         )
 
-        self.__train_feature_matrix.to_csv(os.path.join(self.__output_path, "train_feature_df.csv"), index=False)
+        self.__test_feature_matrix.to_csv(os.path.join(self.__output_path, "test_feature_df.csv"), index=False)
 
-        # ft.save_features(self.__train_feature, os.path.join(self.__output_path, "train_feature_definitions"))
-        # self.__train_feature = ft.load_features("train_feature_definitions")
+        # ft.save_features(self.__test_feature, os.path.join(self.__output_path, "test_feature_definitions"))
+        # self.__test_feature = ft.load_features("test_feature_definitions")
 
-        # self.__train_feature_matrix = ft.calculate_feature_matrix(
-        #     features=self.__train_feature,
+        # self.__test_feature_matrix = ft.calculate_feature_matrix(
+        #     features=self.__test_feature,
         #     entityset=self.__es,
         #     n_jobs=2
         # )
         #
-        # self.__train_feature_matrix.to_csv(os.path.join(self.__output_path, "train_feature_df.csv"), index=True)
+        # self.__test_feature_matrix.to_csv(os.path.join(self.__output_path, "test_feature_df.csv"), index=True)
+
 
 if __name__ == "__main__":
-    ftt = FeatureToolsTrainV7(
+    ftt = FeatureToolsTestV7(
         input_path=sys.argv[1],
         output_path=sys.argv[2]
     )

@@ -19,9 +19,9 @@ class PrepareBureauBalance(object):
         self.__bureau_balance = pd.read_csv(os.path.join(self.__input_path, "bureau_balance.csv"), nrows=10)
 
     def data_transform(self):
-        self.__bureau_balance["MONTHS_BALANCE"] = pd.to_timedelta(self.__bureau_balance["MONTHS_BALANCE"], "M")
+        self.__bureau_balance["TIME_MONTHS_BALANCE"] = pd.to_timedelta(self.__bureau_balance["MONTHS_BALANCE"], "M")
 
-        self.__bureau_balance["MONTHS_BALANCE"] += self.__start_time
+        self.__bureau_balance["TIME_MONTHS_BALANCE"] += self.__start_time
 
         # 方便后续 featuretools 制定 variable types
         for col in self.__bureau_balance.columns.tolist():
@@ -40,13 +40,14 @@ class PrepareBureauBalance(object):
 
     def data_return(self):
         # print(self.__bureau_balance.shape)
+        # self.__bureau_balance.to_csv(os.path.join(self.__input_path, "bureau_balance_temp.csv"), index=False)
 
         return self.__bureau_balance
 
 
 if __name__ == "__main__":
     pbb = PrepareBureauBalance(
-        input_path="C:\\Users\\puhui\\Desktop"
+        input_path="D:\\Kaggle\\Home_Credit_Default_Risk\\clean_data"
     )
     pbb.data_prepare()
     pbb.data_transform()
