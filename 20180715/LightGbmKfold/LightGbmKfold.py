@@ -2,6 +2,7 @@
 
 import re
 import os
+import gc
 import sys
 import numpy as np
 import pandas as pd
@@ -96,6 +97,9 @@ class LightGbmKfold(object):
             # 保存 weight
             # self.__metric_weight.append(roc_auc_score(val_y, self.__oof_preds[val_idx]))
             print("Fold %2d AUC : %.6f" % (n_fold + 1, roc_auc_score(val_y, self.__oof_preds[val_idx])))
+
+            del trn_x, trn_y, val_x, val_y
+            gc.collect()
 
         feature_importance_df.to_csv(os.path.join(self.__output_path, "feature_importance.csv"), index=False)
         print("Full AUC score %.6f" % roc_auc_score(self.__train_label, self.__oof_preds))
