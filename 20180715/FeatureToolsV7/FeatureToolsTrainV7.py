@@ -62,6 +62,9 @@ class FeatureToolsTrainV7(object):
         pat.data_generate()
         self.__application_train_df = pat.data_return()
 
+        # 这里针对分类变量的处理有不足之处
+        # 静态信息表 1、原始分类变量, 之后使用 Target Encoder 2、使用类别占比 Encoder
+        # 流水信息表 1、原始分类变量, NUM_UNIQUE、MODE 2、Dummy 分类变量, 当做布尔值处理
         pb = self.__prepare_bureau.PrepareBureau(input_path=self.__input_path)
         pb.data_prepare()
         pb.data_transform()

@@ -10,7 +10,7 @@ from category_encoders import TargetEncoder
 from sklearn.model_selection import StratifiedKFold
 from lightgbm import LGBMClassifier
 from sklearn.metrics import roc_auc_score
-np.random.seed(8)
+np.random.seed(7)
 
 
 class LightGbmKfold(object):
@@ -56,6 +56,9 @@ class LightGbmKfold(object):
             self.__encoder.transform(self.__test_feature.loc[:, self.__categorical_columns])
         )
 
+        del self.__train, self.__test, self.__categorical_columns, self.__encoder
+        gc.collect()
+
     def model_fit(self):
         self.__folds = StratifiedKFold(n_splits=3, shuffle=True, random_state=7)
         self.__oof_preds = np.zeros(shape=self.__train_feature.shape[0])
@@ -68,16 +71,16 @@ class LightGbmKfold(object):
             val_x, val_y = self.__train_feature.iloc[val_idx], self.__train_label.iloc[val_idx]
 
             self.__gbm = LGBMClassifier(
-                n_estimators=5000,
-                learning_rate=0.0128,
+                n_estimators=8989,
+                learning_rate=0.0137,
                 max_depth=8,
-                num_leaves=11,
-                min_split_gain=0.0018,
-                min_child_weight=2.6880,
-                colsample_bytree=0.5672,
-                subsample=0.6406,
-                reg_alpha=3.5025,
-                reg_lambda=0.9549,
+                num_leaves=200,
+                min_split_gain=0.0320,
+                min_child_weight=1.3459,
+                colsample_bytree=0.5128,
+                subsample=0.8438,
+                reg_alpha=8.0363,
+                reg_lambda=2.6900,
                 n_jobs=-1
             )
 

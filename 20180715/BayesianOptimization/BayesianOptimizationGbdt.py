@@ -73,7 +73,7 @@ class BayesianOptimizationGbdt(object):
 
         self.__gbm_params = {
             # Gradient boosting parameter
-            "n_estimators": (6000, 9000),
+            "n_estimators": (5500, 6500),
             "learning_rate": (0.001, 0.03),
             # tree parameter
             "max_depth": (4, 10),
@@ -88,7 +88,7 @@ class BayesianOptimizationGbdt(object):
             "reg_lambda": (0, 10)
         }
         self.__gbm_bo = BayesianOptimization(__cv, self.__gbm_params)
-        self.__gbm_bo.maximize(init_points=10,  n_iter=50, ** self.__gp_params)
+        self.__gbm_bo.maximize(** self.__gp_params)
 
 
 if __name__ == "__main__":
